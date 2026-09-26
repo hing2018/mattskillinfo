@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Matt Skills 使用手冊 — 42 個 AI 工程技能</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      :root { --accent: #059669; }
+      html { scroll-behavior: smooth; }
+      body { -webkit-font-smoothing: antialiased; }
+
+      /* 圖示用的自訂層：虛線接縫、深色厚模組、介面表面積 */
+      .deep      { background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .seam      { border-style: dashed; }
+      .seam-line { stroke-dasharray: 4 4; }
+      .leak      { stroke: #dc2626; }
+      .iface     { background: #e0e7ff; border: 1px solid #a5b4fc; }
+      .impl      { background: #f1f5f9; border: 1px solid #cbd5e1; }
+      .shallow-iface { background: #fecaca; border: 1px solid #fca5a5; }
+      .shallow-impl  { background: #fee2e2; border: 1px solid #fca5a5; }
+
+      /* 決策樹 */
+      .tree ul { list-style: none; padding-left: 1.1rem; margin: 0; border-left: 1px solid #d6d3d1; }
+      .tree > ul { padding-left: 0; border-left: 0; }
+      .tree li { position: relative; padding: .18rem 0 .18rem .95rem; }
+      .tree li::before {
+        content: ""; position: absolute; left: 0; top: 1.05rem;
+        width: .7rem; height: 1px; background: #d6d3d1;
+      }
+      .tree > ul > li { padding-left: 0; }
+      .tree > ul > li::before { display: none; }
+
+      /* 技能卡 */
+      .card { transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease; }
+      .card:hover { box-shadow: 0 6px 24px -12px rgb(15 23 42 / .35); border-color: #cbd5e1; }
+      .card code { font-size: .72rem; }
+
+      .field-label {
+        font-size: .625rem; letter-spacing: .12em; text-transform: uppercase;
+        color: #78716c; font-weight: 600; white-space: nowrap;
+      }
+      .chip {
+        font-size: .6875rem; padding: .2rem .55rem; border-radius: 999px;
+        border: 1px solid #d6d3d1; background: #fff; color: #57534e;
+        transition: all .12s ease;
+      }
+      .chip:hover { border-color: #a8a29e; color: #1c1917; }
+      ::-webkit-scrollbar { width: 9px; height: 9px; }
+      ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 9px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      .nav-link.active { color: #047857; border-color: #059669; background: #ecfdf5; }
+    </style>
+  </head>
+
+  <body class="bg-stone-50 text-slate-900 font-sans">
+
+  <!-- ══════════════ 側邊導覽 ══════════════ -->
+  <aside class="hidden lg:block fixed inset-y-0 left-0 w-72 overflow-y-auto border-r border-stone-200 bg-white/80 backdrop-blur px-5 py-8 z-20">
+    <a href="#top" class="font-serif text-lg font-semibold tracking-tight block">Matt Skills</a>
+    <p class="text-xs text-stone-500 mt-0.5">42 個 AI 工程技能 · 繁中</p>
+
+    <div class="mt-6 relative">
+      <input id="q" type="search" placeholder="搜尋技能、用途、依賴…"
+             class="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500" />
+    </div>
+
+    <div class="mt-3 flex flex-wrap gap-1.5">
+      <button data-f="all"  class="chip">全部</button>
+      <button data-f="AUTO"  class="chip">自動觸發</button>
+      <button data-f="MANUAL" class="chip">手動觸發</button>
+      <button data-f="本地加裝" class="chip">本地加裝</button>
+    </div>
+
+    <nav class="mt-7 space-y-4 text-sm" id="nav">
+      <div>
+        <p class="field-label mb-1.5">導覽</p>
+        <ul class="space-y-0.5">
+          <li><a class="nav-link block border-l-2 border-transparent pl-3 py-1 text-stone-600 hover:text-slate-900" href="#start">一分鐘快速上手</a></li>
+          <li><a class="nav-link block border-l-2 border-transparent pl-3 py-1 text-stone-600 hover:text-slate-900" href="#tree">我該用哪個</a></li>
+          <li><a class="nav-link block border-l-2 border-transparent pl-3 py-1 text-stone-600 hover:text-slate-900" href="#map">出處分佈</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="field-label mb-1.5">九個情境</p>
+        <ul class="space-y-0.5" id="nav-groups"></ul>
+      </div>
+      <div>
+        <p class="field-label mb-1.5">附錄</p>
+        <ul class="space-y-0.5">
+          <li><a class="nav-link block border-l-2 border-transparent pl-3 py-1 text-stone-600 hover:text-slate-900" href="#appendix-a">附錄 A · 出處對照</a></li>
+          <li><a class="nav-link block border-l-2 border-transparent pl-3 py-1 text-stone-600 hover:text-slate-900" href="#appendix-b">附錄 B · 上下游落差</a></li>
+          <li><a class="nav-link block border-l-2 border-transparent pl-3 py-1 text-stone-600 hover:text-slate-900" href="#appendix-c">附錄 C · 已知缺陷</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <p class="mt-8 text-[11px] leading-relaxed text-stone-400">
+      內容萃取自各技能的 <code class="text-stone-500">SKILL.md</code> 原文，非憑空撰寫。<br />
+      上游：<span class="text-stone-500">github.com/mattpocock/skills</span>
+    </p>
+  </aside>
+
+  <main class="lg:pl-72">
+    <div class="mx-auto max-w-5xl px-6 py-12 space-y-16">
+
+      <!-- ══════════════ 頁首 ══════════════ -->
+      <header id="top" class="border-b border-stone-200 pb-12">
+        <p class="field-label">AI 工程技能手冊</p>
+        <h1 class="mt-3 font-serif text-4xl sm:text-5xl font-semibold tracking-tight leading-tight">
+          Matt Skills
+        </h1>
+        <p class="mt-4 max-w-2xl text-stone-600 leading-relaxed">
+          42 個讓 AI 代理「會做事」的技能：從拷問你的計畫、寫規格、拆工單，到實作、除錯、審查、建模、寫作。
+          每一個都附<strong class="font-semibold text-slate-800">定位、何時該用、怎麼啟動、產出什麼</strong>，
+          讓你三十秒內決定該叫哪一個。
+        </p>
+
+        <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="font-serif text-3xl font-semibold">42</p>
+            <p class="field-label mt-1">技能總數</p>
+          </div>
+          <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="font-serif text-3xl font-semibold">18</p>
+            <p class="field-label mt-1">可自動觸發</p>
+          </div>
+          <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="font-serif text-3xl font-semibold">24</p>
+            <p class="field-label mt-1">須手動指定</p>
+          </div>
+          <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="font-serif text-3xl font-semibold">9</p>
+            <p class="field-label mt-1">本地加裝</p>
+          </div>
+        </div>
+      </header>
+
+      <!-- ══════════════ 快速上手 ══════════════ -->
+      <section id="start">
+        <h2 class="font-serif text-2xl font-semibold tracking-tight">一分鐘快速上手</h2>
+        <p class="mt-2 text-stone-600">第一次用這套技能，先跑這三步就夠了。</p>
+
+        <ol class="mt-6 grid gap-3 sm:grid-cols-3">
+          <li class="rounded-lg border border-stone-200 bg-white p-5">
+            <p class="field-label">第一步</p>
+            <p class="mt-2 font-mono text-sm font-semibold text-emerald-700">/setup-matt-pocock-skills</p>
+            <p class="mt-2 text-sm text-stone-600 leading-relaxed">
+              決定 issue 追蹤在哪、標籤怎麼分類、文件放哪。<strong class="font-semibold">其他工程類技能都依賴它</strong>，沒跑過會缺規格。只跑一次。
+            </p>
+          </li>
+          <li class="rounded-lg border border-stone-200 bg-white p-5">
+            <p class="field-label">第二步</p>
+            <p class="mt-2 font-mono text-sm font-semibold text-emerald-700">/ask-matt</p>
+            <p class="mt-2 text-sm text-stone-600 leading-relaxed">
+              不知道用哪個技能時，問它。它是全技能集的路由器，會告訴你該走哪條流程——只導覽，不執行。
+            </p>
+          </li>
+          <li class="rounded-lg border border-stone-200 bg-white p-5">
+            <p class="field-label">第三步</p>
+            <p class="mt-2 font-mono text-sm font-semibold text-emerald-700">/grill-me</p>
+            <p class="mt-2 text-sm text-stone-600 leading-relaxed">
+              有想法先被拷問。連續追問把你的計畫漏洞挖出來，<strong class="font-semibold">確認有共識之後才會動手</strong>。
+            </p>
+          </li>
+        </ol>
+
+        <div class="mt-8 rounded-lg border border-stone-200 bg-white p-4">
+          <p class="field-label mb-3">典型一輪完整流程</p>
+          <pre class="mermaid">
+flowchart LR
+  A["grill-me<br/><small>把想法問清楚</small>"] --> B["to-spec<br/><small>寫成正式規格</small>"]
+  B --> C["to-tickets<br/><small>拆成小任務</small>"]
+  C --> D["implement<br/><small>逐張實作</small>"]
+  D --> E["code-review<br/><small>收尾審查</small>"]
+  E --> F["qa<br/><small>回報問題→開 issue</small>"]
+  F --> G["triage<br/><small>分類、驗證、追問</small>"]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class A deep
+          </pre>
+        </div>
+      </section>
+
+      <!-- ══════════════ 決策樹 ══════════════ -->
+      <section id="tree">
+        <h2 class="font-serif text-2xl font-semibold tracking-tight">我現在該用哪個？</h2>
+        <p class="mt-2 text-stone-600">點每一項展開對應的技能。</p>
+
+        <div class="tree mt-6 rounded-lg border border-stone-200 bg-white p-6 text-sm leading-relaxed">
+          <ul>
+            <li><span class="font-semibold">完全不知道該用哪個</span>
+              <ul><li><a href="#s-ask-matt" class="font-mono text-emerald-700 hover:underline">ask-matt</a></li></ul>
+            </li>
+
+            <li><span class="font-semibold">有一個想法／計畫，想先被壓力測試</span>
+              <ul>
+                <li>想被一題一題問 → <a href="#s-grilling" class="font-mono text-emerald-700 hover:underline">grilling</a></li>
+                <li>想一次問完所有關鍵問題 → <a href="#s-batch-grill-me" class="font-mono text-emerald-700 hover:underline">batch-grill-me</a></li>
+                <li>邊問邊要把決策與術語落檔 → <a href="#s-grill-with-docs" class="font-mono text-emerald-700 hover:underline">grill-with-docs</a></li>
+                <li>要把某個流程問成可重複規格 → <a href="#s-loop-me" class="font-mono text-emerald-700 hover:underline">loop-me</a></li>
+                <li>卡在只有別人知道答案的決定 → <a href="#s-to-questionnaire" class="font-mono text-emerald-700 hover:underline">to-questionnaire</a></li>
+              </ul>
+            </li>
+
+            <li><span class="font-semibold">討論完了，要變成可執行文件</span>
+              <ul>
+                <li>寫成正式規格 / PRD → <a href="#s-to-spec" class="font-mono text-emerald-700 hover:underline">to-spec</a></li>
+                <li>拆成一張張小任務 → <a href="#s-to-tickets" class="font-mono text-emerald-700 hover:underline">to-tickets</a></li>
+                <li>工程大到一個 session 做不完 → <a href="#s-wayfinder" class="font-mono text-emerald-700 hover:underline">wayfinder</a></li>
+              </ul>
+            </li>
+
+            <li><span class="font-semibold">要寫程式</span>
+              <ul>
+                <li>手上已有 spec 或 ticket → <a href="#s-implement" class="font-mono text-emerald-700 hover:underline">implement</a></li>
+                <li>測試先行（紅→綠→重構）→ <a href="#s-tdd" class="font-mono text-emerald-700 hover:underline">tdd</a></li>
+                <li>還不確定設計對不對 → <a href="#s-prototype" class="font-mono text-emerald-700 hover:underline">prototype</a></li>
+                <li>想改架構但不知從哪下刀 → <a href="#s-improve-codebase-architecture" class="font-mono text-emerald-700 hover:underline">improve-codebase-architecture</a></li>
+              </ul>
+            </li>
+
+            <li><span class="font-semibold">出事了</span>
+              <ul>
+                <li>壞掉／報錯／變慢，找不到根因 → <a href="#s-diagnosing-bugs" class="font-mono text-emerald-700 hover:underline">diagnosing-bugs</a></li>
+                <li>merge / rebase 卡住 → <a href="#s-resolving-merge-conflicts" class="font-mono text-emerald-700 hover:underline">resolving-merge-conflicts</a></li>
+                <li>要規劃一次重構 → <a href="#s-request-refactor-plan" class="font-mono text-emerald-700 hover:underline">request-refactor-plan</a></li>
+              </ul>
+            </li>
+
+            <li><span class="font-semibold">產出東西了，要交出去</span>
+              <ul>
+                <li>審查分支 / PR / WIP → <a href="#s-code-review" class="font-mono text-emerald-700 hover:underline">code-review</a></li>
+                <li>使用者回報 bug，要開單 → <a href="#s-qa" class="font-mono text-emerald-700 hover:underline">qa</a></li>
+                <li>issue / PR 亂成一團要整理 → <a href="#s-triage" class="font-mono text-emerald-700 hover:underline">triage</a></li>
+              </ul>
+            </li>
+
+            <li><span class="font-semibold">團隊／架構層面</span>
+              <ul>
+                <li>統一術語、寫決策紀錄 → <a href="#s-domain-modeling" class="font-mono text-emerald-700 hover:underline">domain-modeling</a></li>
+                <li>只想要一份詞彙表 → <a href="#s-ubiquitous-language" class="font-mono text-emerald-700 hover:underline">ubiquitous-language</a></li>
+                <li>設計模組介面、找深淺 → <a href="#s-codebase-design" class="font-mono text-emerald-700 hover:underline">codebase-design</a></li>
+                <li>要多套完全不同的介面來比 → <a href="#s-design-an-interface" class="font-mono text-emerald-700 hover:underline">design-an-interface</a></li>
+                <li>強制 TS 套件的模組邊界 → <a href="#s-setup-ts-deep-modules" class="font-mono text-emerald-700 hover:underline">setup-ts-deep-modules</a></li>
+              </ul>
+            </li>
+
+            <li><span class="font-semibold">寫作／教學／查資料</span>
+              <ul>
+                <li>查一個主題，要一手來源 → <a href="#s-research" class="font-mono text-emerald-700 hover:underline">research</a></li>
+                <li>改一篇既有文章 → <a href="#s-edit-article" class="font-mono text-emerald-700 hover:underline">edit-article</a></li>
+                <li>教我一個新觀念（多堂課）→ <a href="#s-teach" class="font-mono text-emerald-700 hover:underline">teach</a></li>
+                <li>寫文章：還在發想 → <a href="#s-writing-fragments" class="font-mono text-emerald-700 hover:underline">writing-fragments</a></li>
+                <li>寫文章：素材有了要節拍 → <a href="#s-writing-beats" class="font-mono text-emerald-700 hover:underline">writing-beats</a></li>
+                <li>寫文章：素材有了要段落 → <a href="#s-writing-shape" class="font-mono text-emerald-700 hover:underline">writing-shape</a></li>
+                <li>幫我寫出一個好技能 → <a href="#s-writing-great-skills" class="font-mono text-emerald-700 hover:underline">writing-great-skills</a></li>
+                <li>建置課程練習目錄骨架 → <a href="#s-scaffold-exercises" class="font-mono text-emerald-700 hover:underline">scaffold-exercises</a></li>
+              </ul>
+            </li>
+
+            <li><span class="font-semibold">環境／工具維護</span>
+              <ul>
+                <li>第一次用這套技能 → <a href="#s-setup-matt-pocock-skills" class="font-mono text-emerald-700 hover:underline">setup-matt-pocock-skills</a></li>
+                <li>提交前自動跑檢查 → <a href="#s-setup-pre-commit" class="font-mono text-emerald-700 hover:underline">setup-pre-commit</a></li>
+                <li>擋掉危險 git 指令 → <a href="#s-git-guardrails-claude-code" class="font-mono text-emerald-700 hover:underline">git-guardrails-claude-code</a></li>
+                <li>把手動流程包成互動腳本 → <a href="#s-wizard" class="font-mono text-emerald-700 hover:underline">wizard</a></li>
+                <li>管理 Obsidian 筆記 → <a href="#s-obsidian-vault" class="font-mono text-emerald-700 hover:underline">obsidian-vault</a></li>
+                <li>設定 AI 代理的行為準則 → <a href="#s-behavior" class="font-mono text-emerald-700 hover:underline">behavior</a></li>
+                <li>把測試的 as 斷言換掉 → <a href="#s-migrate-to-shoehorn" class="font-mono text-emerald-700 hover:underline">migrate-to-shoehorn</a></li>
+                <li>換 session／換代理接手 → <a href="#s-handoff" class="font-mono text-emerald-700 hover:underline">handoff</a> · <a href="#s-claude-handoff" class="font-mono text-emerald-700 hover:underline">claude-handoff</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ══════════════ 出處分佈 ══════════════ -->
+      <section id="map">
+        <h2 class="font-serif text-2xl font-semibold tracking-tight">出處與啟動方式分佈</h2>
+        <p class="mt-2 text-stone-600">左圖是各技能在檔案系統中的「體積」對照：介面（可觸發的表面）越接近實作，模組越淺——這裡mostly是均勻的淺模組，正好對應整個技能集偏薄、靠對話而非檔案產出。</p>
+
+        <div class="mt-6 grid gap-4 lg:grid-cols-2">
+          <div class="rounded-lg border border-stone-200 bg-white p-5">
+            <p class="field-label mb-4">出處分佈（上游分類）</p>
+            <div class="space-y-2.5" id="origin-bars"></div>
+          </div>
+          <div class="rounded-lg border border-stone-200 bg-white p-5">
+            <p class="field-label mb-4">啟動方式</p>
+            <div class="grid grid-cols-2 gap-3 mb-5">
+              <div class="iface rounded p-4">
+                <p class="font-serif text-2xl font-semibold text-indigo-900">18</p>
+                <p class="field-label mt-1">自動 · 說需求即可</p>
+              </div>
+              <div class="impl rounded p-4">
+                <p class="font-serif text-2xl font-semibold text-slate-800">24</p>
+                <p class="field-label mt-1">手動 · 必須點名</p>
+              </div>
+            </div>
+            <p class="text-sm text-stone-600 leading-relaxed">
+              原始檔標了 <code class="text-[11px] bg-stone-100 px-1 py-0.5 rounded">disable-model-invocation: true</code> 的技能，
+              模型<strong class="font-semibold">不會</strong>自動套用，你必須直接說「用 xxx 技能」或打技能名。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ 技能卡（JS 產生） ══════════════ -->
+      <div id="groups"></div>
+      <noscript>
+        <p class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          技能卡由 JavaScript 產生。若你停用了 JS，請直接閱讀同資料夾的
+          <code>SKILLS.zh-TW.md</code>（內容完全相同）。
+        </p>
+      </noscript>
+
+      <!-- ══════════════ 附錄 A ══════════════ -->
+      <section id="appendix-a">
+        <h2 class="font-serif text-2xl font-semibold tracking-tight">附錄 A · 出處對照</h2>
+        <div class="mt-5 overflow-hidden rounded-lg border border-stone-200 bg-white">
+          <table class="w-full text-sm">
+            <thead class="bg-stone-100 text-left">
+              <tr>
+                <th class="px-4 py-3 font-semibold">出處</th>
+                <th class="px-4 py-3 font-semibold w-16">數量</th>
+                <th class="px-4 py-3 font-semibold">技能</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-200">
+              <tr>
+                <td class="px-4 py-3 font-mono text-xs">engineering</td>
+                <td class="px-4 py-3 font-serif text-lg">18</td>
+                <td class="px-4 py-3 text-stone-600">ask-matt、code-review、codebase-design、diagnosing-bugs、domain-modeling、grill-with-docs、implement、improve-codebase-architecture、prototype、research、resolving-merge-conflicts、setup-matt-pocock-skills、tdd、to-spec、to-tickets、triage、wayfinder、wizard</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-mono text-xs">in-progress</td>
+                <td class="px-4 py-3 font-serif text-lg">6</td>
+                <td class="px-4 py-3 text-stone-600">claude-handoff、loop-me、setup-ts-deep-modules、writing-beats、writing-fragments、writing-shape</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-mono text-xs">misc</td>
+                <td class="px-4 py-3 font-serif text-lg">4</td>
+                <td class="px-4 py-3 text-stone-600">git-guardrails-claude-code、migrate-to-shoehorn、scaffold-exercises、setup-pre-commit</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-mono text-xs">productivity</td>
+                <td class="px-4 py-3 font-serif text-lg">5</td>
+                <td class="px-4 py-3 text-stone-600">grill-me、grilling、handoff、teach、to-questionnaire</td>
+              </tr>
+              <tr class="bg-amber-50/50">
+                <td class="px-4 py-3 font-mono text-xs">本地加裝</td>
+                <td class="px-4 py-3 font-serif text-lg">9</td>
+                <td class="px-4 py-3 text-stone-600">batch-grill-me、behavior、design-an-interface、edit-article、obsidian-vault、qa、request-refactor-plan、ubiquitous-language、writing-great-skills</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══════════════ 附錄 B ══════════════ -->
+      <section id="appendix-b">
+        <h2 class="font-serif text-2xl font-semibold tracking-tight">附錄 B · 本機快照與上游的落差</h2>
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-lg border border-stone-200 bg-white p-5">
+            <p class="field-label">上游有、本機沒裝（5）</p>
+            <ul class="mt-3 space-y-1.5 font-mono text-sm text-stone-600">
+              <li>implement-spec</li><li>pr</li><li>retro</li><li>wait-what</li><li>writing-for-agents</li>
+            </ul>
+          </div>
+          <div class="rounded-lg border border-amber-300 bg-amber-50 p-5">
+            <p class="field-label !text-amber-800">本機有、上游 HEAD 沒有的（9）</p>
+            <p class="mt-2 text-sm text-amber-900 leading-relaxed">
+              即附錄 A 的「本地加裝」。其中 <code class="text-xs">qa</code>、<code class="text-xs">request-refactor-plan</code>
+              在上游 main 已不存在（也不在 <code class="text-xs">deprecated/</code>），推測是舊版殘留。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ 附錄 C ══════════════ -->
+      <section id="appendix-c">
+        <h2 class="font-serif text-2xl font-semibold tracking-tight">附錄 C · 已知缺陷與注意事項</h2>
+        <ol class="mt-5 space-y-3">
+          <li class="rounded-lg border-l-4 border-red-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">grilling 與 batch-grill-me 設計衝突：</strong>一個要求一次一題、一個要求一次問完。兩者是並存兩套做法，不是同一技能的兩種模式。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">格式損壞的翻譯檔：</strong><code class="text-xs">implement/CHINESE.md</code> 前置結構錯亂（缺 frontmatter）；
+            <code class="text-xs">code-review/CHINESE.md</code> 第 1 行的中文描述被誤置在 <code class="text-xs">---</code> 之前，導致 frontmatter 解析失效。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">內容漂移：</strong><code class="text-xs">codebase-design/CHINESE.md</code> 第 18 行殘留未翻譯的英文 “otherwise”；
+            <code class="text-xs">wizard/CHINESE.md</code> 把原文的 “both” 譯成「兩者都不是」，語意相反。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">文件與程式不一致：</strong><code class="text-xs">setup-ts-deep-modules</code> 文件寫「四條規則」，
+            但 <code class="text-xs">dependency-cruiser.config.cjs</code> 實際有五條。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">版本落差：</strong><code class="text-xs">prototype</code> 本機版是「終端 TUI 小程式」的舊版，上游已改為「單一可分享的 HTML 檔」。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">循環相依：</strong><code class="text-xs">tdd</code> 把重構推給 <code class="text-xs">code-review</code>，
+            而 <code class="text-xs">implement</code> 又要求收尾呼叫 <code class="text-xs">code-review</code>。實務上要自己決定順序。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">路徑寫死：</strong><code class="text-xs">obsidian-vault</code>（WSL 路徑 <code class="text-xs">/mnt/d/…</code>）、
+            <code class="text-xs">scaffold-exercises</code>（<code class="text-xs">ai-hero-cli</code>）無法直接搬到其他專案。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">上游清單可能過期：</strong><code class="text-xs">ask-matt</code> 內嵌的技能清單與本機實際安裝的不同步，
+            <code class="text-xs">edit-article</code> 與三個 writing 技能它都沒提到。
+          </li>
+          <li class="rounded-lg border-l-4 border-amber-400 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">精簡版技能：</strong><code class="text-xs">implement</code>、<code class="text-xs">triage</code>、
+            <code class="text-xs">research</code>、<code class="text-xs">edit-article</code> 檔案極短（12～15 行），相較其他技能屬明顯精簡版。
+          </li>
+          <li class="rounded-lg border-l-4 border-stone-300 bg-white p-4 text-sm leading-relaxed">
+            <strong class="font-semibold">前端編號前綴：</strong>各 <code class="text-xs">SKILL.md</code> frontmatter 的 <code class="text-xs">name</code> 帶
+            <code class="text-xs">[01]</code>～<code class="text-xs">[42]</code> 編號是本地加的排序前綴，
+            <strong class="font-semibold">實際 slash 指令名是不帶前綴的資料夾名</strong>。
+          </li>
+        </ol>
+      </section>
+
+      <footer class="border-t border-stone-200 pt-8 pb-4 text-sm text-stone-500">
+        <p>同目錄另有純文字版 <code class="text-xs">SKILLS.zh-TW.md</code>，內容與本頁一致。</p>
+      </footer>
+    </div>
+  </main>
+
+  <script>
+  /* ══════════════ 資料（萃取自各技能 SKILL.md 原文） ══════════════ */
+  const GROUPS = [
+    { id:'route',  t:'1. 不確定用哪個',        d:'先問再動。技能集本身也有入口。' },
+    { id:'grill',  t:'2. 討論與規劃（grill 系列）', d:'把模糊的想法追問到有共識；共識之前不動手。' },
+    { id:'spec',   t:'3. 規格與拆解',          d:'把討論變成可執行文件，再切成能逐張完成的工單。' },
+    { id:'build',  t:'4. 實作與測試',          d:'從已有規格動手，或先確認設計方向。' },
+    { id:'fix',    t:'5. 除錯與重構',          d:'出事時的紀律：先建立可重現迴路，再下刀。' },
+    { id:'ship',   t:'6. 審查與交付',          d:'東西產出來之後怎麼驗、怎麼收。' },
+    { id:'arch',   t:'7. 領域建模與架構',      d:'共用詞彙、深模組設計、模組邊界強制執行。' },
+    { id:'write',  t:'8. 寫作、教學與研究',    d:'把想法變成文字，或把知識變成技能。' },
+    { id:'env',    t:'9. 環境與工具維護',      d:'一次性的設定與自動化的护欄。' },
+  ];
+
+  const SKILLS = [
+  /* ── 1. route ── */
+  { n:'ask-matt', g:'route', o:'engineering', m:'MANUAL',
+    p:'技能路由器，告訴你該走哪條流程',
+    w:'不知道該用哪個技能、想不起有哪些流程時。它是整個技能集的索引。',
+    t:'Ask which skill or flow fits your situation. A router over the skills in this repo.',
+    y:'不寫檔案。純對話回答，輸出「該走哪條流程（主流程／匝道／獨立／詞彙層）」的建議。',
+    v:'需先跑過 /setup-matt-pocock-skills',
+    r:'只導覽不執行；內含的技能清單可能與本機實際安裝的不同步。' },
+
+  /* ── 2. grill ── */
+  { n:'grill-me', g:'grill', o:'productivity', m:'MANUAL',
+    p:'觸發一次無產出的追問拷問',
+    w:'想嚴格拷問自己的計畫或設計。',
+    t:'Run a /grilling session.',
+    y:'無獨立產出。它本身只是薄包裝（全文僅 7 行），所有規則都在 grilling。',
+    v:'依賴 grilling',
+    r:'用它就等於跑 grilling。' },
+  { n:'grilling', g:'grill', o:'productivity', m:'AUTO',
+    p:'沿決策樹逐題追問，直到跟你達成共識',
+    w:'任何 grill 觸發詞、想壓測自己的想法時。這是整個「拷問家族」的核心。',
+    t:'Grill the user relentlessly about a plan, decision, or idea. For each question, provide your recommended answer.',
+    y:'共識結論。在你確認之前，它不會動手做任何事。',
+    v:'無依賴',
+    r:'兩條紀律：能自己查的事實就自己去查，不要拿來問你；決策才丟給你，而且每次只問一題。' },
+  { n:'batch-grill-me', g:'grill', o:'本地加裝', m:'MANUAL',
+    p:'一次問完所有前沿問題，分輪推進',
+    w:'想快速把整張決策樹走完，而不是一題一題等。',
+    t:'A relentless interview that asks every frontier question at once, round by round.',
+    y:'對話中的逐輪追問與收斂出的設計結論。',
+    v:'無依賴',
+    r:'它與 grilling（一次一題）設計上直接衝突——是並存的兩套做法。回合多、耗 token。' },
+  { n:'grill-with-docs', g:'grill', o:'engineering', m:'MANUAL',
+    p:'追問的同時產出 ADR 與詞彙表',
+    w:'想磨計畫，並且希望把過程中的決策與術語順手落檔成文件。',
+    t:'A relentless interview to sharpen a plan or design, which also creates docs as we go.',
+    y:'CONTEXT.md 與 docs/adr/ 下的決策紀錄。',
+    v:'依賴 grilling、domain-modeling',
+    r:'檔案是延遲建立的：沒有內容就不會生出空檔案。' },
+  { n:'loop-me', g:'grill', o:'in-progress', m:'MANUAL',
+    p:'用追問把某個工作流程問成可重複的規格',
+    w:'想在此工作區把「我要建的那套流程」講清楚。',
+    t:'Grill me about specs for the workflows I want to build, within this workspace.',
+    y:'workflows/*.md 與 NOTES.md。',
+    v:'依賴 grilling',
+    r:'完課標準很硬：沒參與過討論的人，拿到文件就能零提問地把它建出來。' },
+  { n:'handoff', g:'grill', o:'productivity', m:'MANUAL',
+    p:'把當前對話壓縮成一份接手摘要',
+    w:'要換 session、或換另一個代理接手同一件事。',
+    t:'Compact the current conversation into a handoff document for another agent to pick up.',
+    y:'OS 暫存目錄裡的 handoff 文件（不放進專案，避免污染版控）。',
+    v:'無依賴',
+    r:'必須遮蔽金鑰等機密，而且不要重複已經存在的產物。' },
+  { n:'claude-handoff', g:'grill', o:'in-progress', m:'MANUAL',
+    p:'把摘要直接餵給背景代理接續執行',
+    w:'要立刻開一個新代理接手未完成的工作。',
+    t:'Hand the current conversation off to a fresh background agent that picks up the work immediately.',
+    y:'一個 claude --bg 背景代理任務。',
+    v:'無依賴',
+    r:'必須用 -n 具名（否則分不出哪個背景代理在跑）；摘要本身就是那個代理的提示詞。' },
+  { n:'to-questionnaire', g:'grill', o:'productivity', m:'MANUAL',
+    p:'把你答不出來的決定，變成一份問卷交給對的人',
+    w:'卡在某個決定上，而掌握關鍵資訊的是別人（同事、專家）——把問題問對方，而不是自己猜。',
+    t:'Turn a decision you can’t fully answer into a questionnaire for someone else to fill in.',
+    y:'to-questionnaire-&lt;slug&gt;.md，存於當前目錄並回報路徑。內含 Purpose、From/To、Context、分組問題。',
+    v:'無依賴',
+    r:'只拷問兩件事：寄給誰、要什麼。重要問題排前面。' },
+
+  /* ── 3. spec ── */
+  { n:'to-spec', g:'spec', o:'engineering', m:'MANUAL',
+    p:'不追問，直接產出規格並發佈',
+    w:'討論已經結束，要把結論變成正式 spec／PRD。',
+    t:'Turn the current conversation into a spec and publish it to the project issue tracker.',
+    y:'issue tracker 上的一張 spec issue，加上 ready-for-agent 標籤。',
+    v:'依賴 setup-matt-pocock-skills（它決定要發到哪）',
+    r:'正文禁止貼檔案路徑與程式碼片段。' },
+  { n:'to-tickets', g:'spec', o:'engineering', m:'MANUAL',
+    p:'拆成一張張垂直切片的小任務，並標出相依關係',
+    w:'有計畫或規格，要拆成可逐步實作的小任務。',
+    t:'Break a plan, spec, or the current conversation into a set of tracer-bullet tickets.',
+    y:'本地一個檔案一個 ticket（相依關係寫在文字裡），或 tracker 上的原生 tickets ＋ ready-for-agent。',
+    v:'依賴 setup-matt-pocock-skills',
+    r:'必須先讓使用者核准切片的粒度與阻擋邊界，再開始拆。' },
+  { n:'wayfinder', g:'spec', o:'engineering', m:'MANUAL',
+    p:'把大工程畫成一張決策票地圖，再一張一張解決',
+    w:'工程大到單一 session 裝不下、而且連該走哪條路都還不明確。',
+    t:'Plan a huge chunk of work as a shared map of decision tickets on your issue tracker.',
+    y:'tracker 上標為 wayfinder:map 的主議題，以及其子議題。',
+    v:'依賴 setup-matt-pocock-skills、grilling、domain-modeling',
+    r:'預設「只規劃不執行」；並行編輯同一張地圖容易衝突。' },
+
+  /* ── 4. build ── */
+  { n:'implement', g:'build', o:'engineering', m:'MANUAL',
+    p:'依規格或工單動手寫程式',
+    w:'手上已有 spec 或 ticket 清單要實作。多 session 的專案建議一張 ticket 開一個 session 跑一次。',
+    t:'Implement a piece of work based on a spec or set of tickets.',
+    y:'程式碼 ＋ 測試，最後 commit 到目前分支。',
+    v:'依賴 /tdd、/code-review；過程自動跑型別檢查與測試',
+    r:'重構不屬於紅→綠迴圈，會被推給 code-review 階段。本檔僅 15 行，屬精簡版。' },
+  { n:'tdd', g:'build', o:'engineering', m:'AUTO',
+    p:'測試先行的紅→綠→重構規範',
+    w:'你說「測試先行」「red-green-refactor」，或想補整合測試。',
+    t:'Test-driven development. Use when the user wants to build features or fix bugs test-first.',
+    y:'一條條垂直切片式的好測試。',
+    v:'需要先用者確認「接縫 seam」在哪',
+    r:'重構不屬於紅綠循環；此技能與 implement、code-review 三者循環相依，順序自己拿捏。' },
+  { n:'prototype', g:'build', o:'engineering', m:'AUTO',
+    p:'用完即丟的原型，只為回答一個設計問題',
+    w:'問題是「這個狀態模型／邏輯到底對不對」或「這個介面該長什麼樣」。',
+    t:'Build a throwaway prototype to answer a design question.',
+    y:'可跑的原型 ＋ 拋棄分支 ＋ 裁決記錄。',
+    v:'無依賴',
+    r:'它會先分岔成 LOGIC 與 UI 兩條線。本機版本比上游舊（上游是單一可分享的 HTML 檔）。' },
+
+  /* ── 5. fix ── */
+  { n:'diagnosing-bugs', g:'fix', o:'engineering', m:'AUTO',
+    p:'難解 bug 與效能退化的診斷紀律',
+    w:'你說「diagnose」「debug this」，或回報東西壞掉／丟錯／變慢。',
+    t:'Diagnosis loop for hard bugs and performance regressions.',
+    y:'一個會先失敗的回歸測試（紅燈）＋ 根因說明 ＋ 事後檢討。',
+    v:'可交接給 handoff／improve-codebase-architecture',
+    r:'沒有可重現的迴路就不准開始猜——這是它最重要的紀律。' },
+  { n:'resolving-merge-conflicts', g:'fix', o:'engineering', m:'AUTO',
+    p:'解決進行中的 merge／rebase 衝突',
+    w:'倉庫卡在合併或 rebase 衝突中。',
+    t:'Use when you need to resolve an in-progress git merge/rebase conflict.',
+    y:'完成並提交的合併或 rebase。',
+    v:'無依賴',
+    r:'絕對不做 --abort，也不發明原本不存在的新行為去消解衝突。' },
+  { n:'request-refactor-plan', g:'fix', o:'本地加裝', m:'AUTO',
+    p:'訪談並拆成極小提交的重構計畫',
+    w:'想規劃一次重構、寫重構 RFC、或把重構分解成安全的漸進步驟。',
+    t:'Create a detailed refactor plan with tiny commits via user interview, then file it as a GitHub issue.',
+    y:'一張 GitHub issue 形式的重構計畫。',
+    v:'假設走 GitHub issue，但未指明用哪個 CLI／工具',
+    r:'issue 內文不得寫檔案路徑或程式碼。' },
+  { n:'migrate-to-shoehorn', g:'fix', o:'misc', m:'AUTO',
+    p:'把測試中的 as 型別斷言換成 shoehorn',
+    w:'你提到 shoehorn、想在測試裡改用 as，或需要「只填一部分」的測試資料。',
+    t:'Migrate test files from as type assertions to @total-typescript/shoehorn.',
+    y:'改寫既有的 *.test.ts／*.spec.ts：as Type → fromPartial()、as unknown as Type → fromAny()。',
+    v:'需先 npm i @total-typescript/shoehorn',
+    r:'明文限定「只改測試程式碼」，不要動生產碼。' },
+  { n:'improve-codebase-architecture', g:'fix', o:'engineering', m:'MANUAL',
+    p:'掃描架構、找淺模組，產出 HTML 報告再追問',
+    w:'想改善架構深度與可測試性。',
+    t:'Scan a codebase for deepening opportunities, present them as a visual HTML report.',
+    y:'暫存目錄裡的 HTML 架構審查報告。',
+    v:'依賴 codebase-design、grilling、domain-modeling',
+    r:'禁止在報告階段就先提介面設計，架構術語也不得漂移。' },
+
+  /* ── 6. ship ── */
+  { n:'code-review', g:'ship', o:'engineering', m:'AUTO',
+    p:'雙軸審查變更——標準 ＋ 規格，平行子代理',
+    w:'想審查某個分支、PR 或進行中的變更，或你說「review since X」。',
+    t:'Review the changes since a fixed point along two axes — Standards and Spec.',
+    y:'不寫檔案。報告含 ## Standards 與 ## Spec 兩節（各子代理 400 字內）＋ 一行摘要。',
+    v:'需要 git diff/log/rev-parse；兩個子代理平行跑；需 docs/agents/issue-tracker.md',
+    r:'兩軸刻意分離，禁止合併成一份。' },
+  { n:'qa', g:'ship', o:'本地加裝', m:'AUTO',
+    p:'對話式 QA，自動開 GitHub issue',
+    w:'想回報 bug、做 QA，或提到「QA session」。',
+    t:'Interactive QA session where user reports bugs or issues conversationally.',
+    y:'依相依順序建立的一組 issue（gh issue create）。',
+    v:'依賴 UBIQUITOUS_LANGUAGE.md',
+    r:'它會直接開單，不先請使用者審核——在意流程節奏的人要先知道這點。' },
+  { n:'triage', g:'ship', o:'engineering', m:'MANUAL',
+    p:'issue 與外部 PR 的分類狀態機',
+    w:'要整理、分類、驗證 issue／PR，並想追問釐清。',
+    t:'Move issues and external PRs through a state machine of triage roles.',
+    y:'類別 ＋ 狀態標籤，以及可交給代理執行的 brief（AGENT-BRIEF.md、OUT-OF-SCOPE.md）。',
+    v:'依賴 setup-matt-pocock-skills、grilling、domain-modeling',
+    r:'每個 issue 恰一個類別角色加一個狀態角色，不可疊加。本檔僅數行，屬精簡版。' },
+
+  /* ── 7. arch ── */
+  { n:'domain-modeling', g:'arch', o:'engineering', m:'AUTO',
+    p:'建置並磨利領域模型與詞彙表',
+    w:'要統一術語、寫 ADR，或其他技能需要它來維護領域文件時。',
+    t:'Build and sharpen a project’s domain model.',
+    y:'CONTEXT.md、CONTEXT-MAP.md、docs/adr/。',
+    v:'依賴 CONTEXT-FORMAT.md、ADR-FORMAT.md',
+    r:'ADR 只有三個條件全中才提，且禁止寫實作細節。' },
+  { n:'ubiquitous-language', g:'arch', o:'本地加裝', m:'MANUAL',
+    p:'從對話抽出 DDD 通用語言表',
+    w:'要定義領域詞彙、建詞彙表、談 DDD。',
+    t:'Extract a DDD-style ubiquitous language glossary from the current conversation.',
+    y:'UBIQUITOUS_LANGUAGE.md，以及對話中的行內摘要。',
+    v:'無依賴',
+    r:'須有主見（該定案的直接定案）、旗標出歧義處、每個定義限一句。' },
+  { n:'codebase-design', g:'arch', o:'engineering', m:'AUTO',
+    p:'深度模組設計的共用詞彙',
+    w:'要設計或改善模組介面、找「深層化」機會、決定接縫畫在哪、想讓程式碼好測試好維護時。',
+    t:'Shared vocabulary for designing deep modules.',
+    y:'對話中的設計決策；延伸文件 DEEPENING.md、DESIGN-IT-TWICE.md。',
+    v:'被 improve-codebase-architecture、setup-ts-deep-modules 引用',
+    r:'這個詞彙表是整個架構類技能的共同語言，先讀它再談其他架構技能。' },
+  { n:'design-an-interface', g:'arch', o:'本地加裝', m:'AUTO',
+    p:'用平行子代理產生多套完全不同的介面設計',
+    w:'要設計 API、探索介面方案、比較模組形狀，或你說「design it twice」。',
+    t:'Generate multiple radically different interface designs for a module using parallel sub-agents.',
+    y:'數套並行的介面設計提案，供比較取捨。',
+    v:'無依賴',
+    r:'手法已被併入 codebase-design/DESIGN-IT-TWICE.md，功能重疊，選一個即可。' },
+  { n:'setup-ts-deep-modules', g:'arch', o:'in-progress', m:'MANUAL',
+    p:'用 dependency-cruiser 強制 TS 套件只能從進入點匯入',
+    w:'想讓每個 package 成為「深層模組」——實作藏在子資料夾，對外只露根目錄檔案。',
+    t:'Wire dependency-cruiser into a TypeScript repo so each package is a deep module. User-invoked.',
+    y:'.dependency-cruiser.cjs、package.json 的 lint:boundaries 腳本、範例套件 example/、README.md。',
+    v:'需 dependency-cruiser 與 depcruise CLI；必須改 PACKAGES_ROOT',
+    r:'必須完成「故意違規 → 失敗 → 還原」的驗證步驟才算完成。文件寫四條規則，config 實際五條。' },
+
+  /* ── 8. write ── */
+  { n:'research', g:'write', o:'engineering', m:'AUTO',
+    p:'派背景代理查一手來源，產出報告',
+    w:'要研究一個主題、查文件／API 細節，或把讀資料的雜事丟給背景代理。',
+    t:'Investigate a question against high-trust primary sources.',
+    y:'單一 Markdown 報告，逐條標註來源。',
+    v:'依賴背景代理',
+    r:'要沿用 repo 既有的筆記慣例。本檔僅 12 行、3 步、無完成準則，屬精簡版。' },
+  { n:'edit-article', g:'write', o:'本地加裝', m:'MANUAL',
+    p:'重構文章結構與行文',
+    w:'要編修、改寫、或改進一篇文章草稿。',
+    t:'Edit and improve articles by restructuring sections, improving clarity.',
+    y:'改寫後的文章，每段不超過 240 字。',
+    v:'無依賴',
+    r:'段落順序必須符合資訊 DAG 依賴關係。本檔僅 15 行，是這批裡最薄的技能。' },
+  { n:'teach', g:'write', o:'productivity', m:'MANUAL',
+    p:'在工作區內進行互動式、多堂課的教學',
+    w:'想學一個新技能或新觀念，而且願意上多堂課。',
+    t:'Teach the user a new skill or concept, within this workspace.',
+    y:'MISSION.md、lessons/*.html、reference/*.html。',
+    v:'依賴同目錄的四個 *-FORMAT.md',
+    r:'整個教學的地基是「你為什麼想學」——先問清楚動機再排課。' },
+  { n:'writing-fragments', g:'write', o:'in-progress', m:'MANUAL',
+    p:'寫作的探索期，挖掘片段，還不要結構',
+    w:'還在發想、還沒定結構的階段。',
+    t:'Writing, explore — mine raw fragments, no structure yet.',
+    y:'單一 Markdown 檔，片段之間用 --- 分隔。',
+    v:'無依賴',
+    r:'只能追加、不能覆寫。最重的一件事是「煉出 leading word（領頭詞）」。' },
+  { n:'writing-beats', g:'write', o:'in-progress', m:'MANUAL',
+    p:'寫作的利用階段，把素材組織成一節節節拍',
+    w:'已有素材檔，進入 exploit（利用）階段，要節奏。',
+    t:'Writing, exploit — assemble raw material into a journey of beats.',
+    y:'逐 beat 寫入的 Markdown 文章。',
+    v:'依賴 writing-fragments 的素材檔',
+    r:'每個概念都要先 grounded（落地定義）再被引用，而且每次只寫一個 beat。' },
+  { n:'writing-shape', g:'write', o:'in-progress', m:'MANUAL',
+    p:'寫作的利用階段，逐段把素材塑成完整文章',
+    w:'已有素材檔，進入 exploit 階段，要結構。',
+    t:'Writing, exploit — shape raw material into an article, paragraph by paragraph.',
+    y:'逐段落寫入的 Markdown 文章。',
+    v:'素材檔是唯讀的',
+    r:'不得改動素材檔。格式選擇必須先與使用者辯論過再定。與 writing-beats 同屬 exploit，兩者都沒說明如何擇一。' },
+  { n:'writing-great-skills', g:'write', o:'本地加裝', m:'MANUAL',
+    p:'寫好 Skill 的詞彙與原則參考指南',
+    w:'要撰寫或修改 skill 本身時。（原始 description 未列觸發詞，屬純參考文件。）',
+    t:'（無觸發詞）定位為 pure reference：全是 reference，沒有 steps。',
+    y:'參考指南本體，術語表在 GLOSSARY.md。',
+    v:'依賴 GLOSSARY.md',
+    r:'粗體詞彙的定義一律外指，不在本文重複解釋。' },
+  { n:'scaffold-exercises', g:'write', o:'misc', m:'AUTO',
+    p:'快速生出可通過 lint 的課程練習目錄骨架',
+    w:'要 scaffold 練習、建立 exercise stub，或開一門課的新章節。',
+    t:'Create exercise directory structures with sections, problems, solutions, and explainers.',
+    y:'exercises/XX-section/XX.YY-exercise/{problem,solution,explainer}/readme.md，皆非空、無壞連結。',
+    v:'依賴 pnpm ai-hero-cli internal lint、git mv、git commit',
+    r:'高度綁定 AI Hero 課程 repo 的 exercises/ 慣例，搬到其他 repo 會失效。' },
+
+  /* ── 9. env ── */
+  { n:'setup-matt-pocock-skills', g:'env', o:'engineering', m:'MANUAL',
+    p:'設定 issue tracker、標籤分類、文件版面',
+    w:'其他工程類技能第一次使用前跑一次。',
+    t:'Configure this repo for the engineering skills. Run once before first use.',
+    y:'docs/agents/ 下三份設定檔（issue tracker 設定、triage 標籤、domain 文件版面）。',
+    v:'需先安裝 triage 技能',
+    r:'GitHub 與 GitLab 兩份 md 都不存在時，不可自行挑一個——要回頭問使用者。' },
+  { n:'setup-pre-commit', g:'env', o:'misc', m:'AUTO',
+    p:'為 JS/TS 專案裝 Husky 提交前的自動品質關卡',
+    w:'想加 pre-commit 鉤子、裝 Husky、設 lint-staged，或希望提交時自動跑格式化／型別檢查／測試。',
+    t:'Set up Husky pre-commit hooks with lint-staged, type checking, and tests.',
+    y:'.husky/pre-commit、.lintstagedrc、.prettierrc，以及 package.json 的 prepare 與 lint:boundaries 腳本。',
+    v:'需 package.json 已有 typecheck／test 腳本',
+    r:'它會動到你的 package.json 並自動提交一次煙霧測試，不是純諮詢。' },
+  { n:'git-guardrails-claude-code', g:'env', o:'misc', m:'AUTO',
+    p:'為 Claude Code 裝 PreToolUse 鉤子，攔截危險 git 指令',
+    w:'想防止破壞性 git 操作，或想擋掉 git push／reset --hard。',
+    t:'Set up Claude Code hooks to block dangerous git commands before they execute.',
+    y:'.claude/hooks/block-dangerous-git.sh，並把 hooks.PreToolUse 合併進 .claude/settings.json。',
+    v:'需要 jq、chmod +x，支援 WSL／Unix',
+    r:'只對 Claude Code 有效；是子字串比對的粗略攔截，連 echo "git push" 也會被擋。' },
+  { n:'wizard', g:'env', o:'engineering', m:'MANUAL',
+    p:'生成逐步帶人操作的互動式 bash 設定精靈',
+    w:'有繁瑣的手動流程（第三方服務設定、一次性資料遷移、A→B 狀態轉換）想包成腳本。',
+    t:'（無觸發詞）刻意不含 Use when，只給人看。',
+    y:'一支 bash 腳本，會寫 .env 與 gh secret／gh variable。',
+    v:'需要 bash -n、shellcheck（選用）、gh CLI、wslview／xdg-open',
+    r:'不要自己端到端跑（會開瀏覽器並卡在人工輸入）；STAGES 標記以上的 library 絕不可手改。' },
+  { n:'obsidian-vault', g:'env', o:'本地加裝', m:'AUTO',
+    p:'搜尋、建立、整理 Obsidian 筆記與 wikilinks',
+    w:'想在本機 Obsidian vault 找筆記、寫新筆記或整理筆記。',
+    t:'Search, create, and manage notes in the Obsidian vault with wikilinks.',
+    y:'vault 內的 .md 筆記（Title case 檔名、底部加 wikilinks）與索引筆記。',
+    v:'依賴 find／grep 或 Grep／Glob 工具',
+    r:'路徑寫死成 WSL 風格 /mnt/d/Obsidian Vault/…，換機器就失效；引用的 vault rules 未內含。' },
+  { n:'behavior', g:'env', o:'本地加裝', m:'AUTO',
+    p:'AI 代理的行為護欄',
+    w:'想設定 AI 代理的行為預設（遇到問題主動提問、修改前先比較方案、拒絕過度設計）。',
+    t:'Role and behavioral guardrails for the AI agent. Use when another skill needs to reference these guardrails.',
+    y:'行為準則的規範（Karpathy 式思考、極簡主義、取捨表達、主動釐清）。',
+    v:'其他技能會引用它',
+    r:'屬「規則層」而非「流程層」——它不會自己做事，是給別的技能引用的底層。' },
+  ];
+
+  const ORIGIN_COLOR = {
+    'engineering':'bg-slate-100 text-slate-700 border-slate-300',
+    'in-progress':'bg-amber-50 text-amber-800 border-amber-300',
+    'misc':'bg-violet-50 text-violet-700 border-violet-300',
+    'productivity':'bg-sky-50 text-sky-700 border-sky-300',
+    '本地加裝':'bg-rose-50 text-rose-700 border-rose-300',
+  };
+
+  const esc = s => (s||'').replace(/&(?!lt;|amp;|gt;|#)/g,'&amp;').replace(/</g,'&lt;');
+  const highlight = (s,k) => {
+    if (!k) return s;
+    const safe = esc(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return esc(s).replace(new RegExp('('+safe+')','gi'), '<mark class="bg-emerald-200/70 rounded-sm px-0.5">$1</mark>');
+  };
+
+  const FIELD = (label, body) => !body ? '' :
+    '<div class="flex gap-3 border-t border-stone-100 py-2.5 first:border-0">' +
+      '<span class="field-label w-20 shrink-0 pt-0.5">' + label + '</span>' +
+      '<span class="text-sm text-stone-700 leading-relaxed min-w-0">' + body + '</span>' +
+    '</div>';
+
+  function card(s) {
+    const how = s.m === 'MANUAL'
+      ? '<span class="text-stone-700">手動 — 模型不會自動觸發，必須明確指定技能名。</span>'
+      : '<span class="text-stone-700">自動 — 描述關鍵字符合時，模型可自動套用。</span>';
+    return '' +
+    '<article id="s-' + s.n + '" class="card scroll-mt-8 rounded-lg border border-stone-200 bg-white p-5 sm:p-6">' +
+      '<div class="flex flex-wrap items-center gap-2">' +
+        '<h3 class="font-mono text-base font-semibold tracking-tight">' + s.n + '</h3>' +
+        '<span class="rounded-full border px-2 py-0.5 text-[11px] font-medium ' + ORIGIN_COLOR[s.o] + '">' + s.o + '</span>' +
+        '<span class="rounded-full border px-2 py-0.5 text-[11px] font-medium ' +
+          (s.m === 'MANUAL' ? 'border-slate-300 bg-slate-50 text-slate-600' : 'border-emerald-300 bg-emerald-50 text-emerald-700') + '">' +
+          (s.m === 'MANUAL' ? '手動' : '自動') + '</span>' +
+      '</div>' +
+      '<p class="mt-2.5 text-stone-800">' + s.p + '</p>' +
+      '<div class="mt-4">' +
+        FIELD('何時該用', s.w) +
+        FIELD('怎麼啟動', how) +
+        FIELD('原始觸發詞', '<code class="text-[11px] bg-stone-100 px-1.5 py-0.5 rounded break-words">' + s.t + '</code>') +
+        FIELD('產出', s.y) +
+        FIELD('依賴', s.v) +
+      '</div>' +
+      '<p class="mt-3 rounded-md border-l-2 border-amber-400 bg-amber-50/60 px-3 py-2 text-sm text-amber-900 leading-relaxed">' +
+        '<span class="field-label !text-amber-800">注意 · </span>' + s.r + '</p>' +
+    '</article>';
+  }
+
+  /* ── 渲染分組 ── */
+  const host = document.getElementById('groups');
+  const navG = document.getElementById('nav-groups');
+  host.innerHTML = GROUPS.map(g => {
+    const items = SKILLS.filter(s => s.g === g.id);
+    return '' +
+    '<section id="g-' + g.id + '" class="scroll-mt-8">' +
+      '<div class="flex items-baseline gap-3 border-b border-stone-300 pb-2">' +
+        '<h2 class="font-serif text-xl font-semibold tracking-tight">' + g.t + '</h2>' +
+        '<span class="font-mono text-xs text-stone-400">' + items.length + '</span>' +
+      '</div>' +
+      '<p class="mt-2 text-sm text-stone-500">' + g.d + '</p>' +
+      '<div class="mt-5 grid gap-3">' + items.map(card).join('') + '</div>' +
+    '</section>';
+  }).join('');
+
+  navG.innerHTML = GROUPS.map(g =>
+    '<li><a class="nav-link block border-l-2 border-transparent pl-3 py-1 text-stone-600 hover:text-slate-900" href="#g-' +
+    g.id + '">' + g.t + '</a></li>').join('');
+
+  /* ── 出處長條圖 ── */
+  const ORIGINS = ['engineering','in-progress','misc','productivity','本地加裝'];
+  const BAR = { 'engineering':'bg-slate-700','in-progress':'bg-amber-400','misc':'bg-violet-400','productivity':'bg-sky-400','本地加裝':'bg-rose-400' };
+  const counts = ORIGINS.map(o => ({ o, n: SKILLS.filter(s => s.o === o).length }));
+  const max = Math.max(...counts.map(c => c.n));
+  document.getElementById('origin-bars').innerHTML = counts.map(c =>
+    '<div><div class="flex items-baseline justify-between text-xs">' +
+      '<span class="font-mono text-stone-600">' + c.o + '</span>' +
+      '<span class="font-serif text-base font-semibold">' + c.n + '</span>' +
+    '</div><div class="mt-1 h-2 rounded-full bg-stone-100">' +
+      '<div class="h-2 rounded-full ' + BAR[c.o] + '" style="width:' + (c.n / max * 100) + '%"></div>' +
+    '</div></div>').join('');
+
+  /* ── 搜尋 + 篩選 ── */
+  let filter = 'all', kw = '';
+  const cards = [...document.querySelectorAll('#groups article')];
+  const secs  = [...document.querySelectorAll('#groups > section')];
+
+  function apply() {
+    const k = kw.trim().toLowerCase();
+    cards.forEach(c => {
+      const s = SKILLS.find(x => 's-' + x.n === c.id);
+      const hitF = filter === 'all' || filter === s.m || filter === s.o;
+      const blob = [s.n, s.p, s.w, s.y, s.v, s.r, s.t, s.o].join(' ').toLowerCase();
+      const hitK = !k || blob.includes(k);
+      c.style.display = hitF && hitK ? '' : 'none';
+    });
+    secs.forEach(sec => {
+      const any = [...sec.querySelectorAll('article')].some(a => a.style.display !== 'none');
+      sec.style.display = any ? '' : 'none';
+    });
+  }
+
+  document.getElementById('q').addEventListener('input', e => { kw = e.target.value; apply(); });
+  document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('ring-2','ring-emerald-500','bg-emerald-50','text-emerald-800','border-emerald-300'));
+    b.classList.add('ring-2','ring-emerald-500','bg-emerald-50','text-emerald-800','border-emerald-300');
+    filter = b.dataset.f; apply();
+  }));
+
+  /* ── 側邊導覽高亮 ── */
+  const links = [...document.querySelectorAll('.nav-link')];
+  const targets = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const io = new IntersectionObserver(es => {
+    es.forEach(en => {
+      if (!en.isIntersecting) return;
+      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + en.target.id));
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+  targets.forEach(t => io.observe(t));
+  </script>
+</body>
+</html>
